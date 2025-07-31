@@ -1,0 +1,2045 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ระบบจองโต๊ะงานสถาปนาแผนกช่างไฟฟ้ากำลังครบรอบ 50 ปี</title>
+    
+    <!-- Bootstrap CSS -->
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.0/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap-icons/1.10.0/font/bootstrap-icons.min.css" rel="stylesheet">
+    
+    <!-- Firebase -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/firebase/9.23.0/firebase-app-compat.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/firebase/9.23.0/firebase-auth-compat.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/firebase/9.23.0/firebase-firestore-compat.min.js"></script>
+    
+    <!-- Bootstrap JS -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.0/js/bootstrap.bundle.min.js"></script>
+    
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Prompt:wght@300;400;500;600;700&display=swap');
+        
+        body {
+            font-family: 'Prompt', sans-serif;
+            background-color: #f8f9fa;
+        }
+        
+        .navbar-brand {
+            font-weight: 600;
+            font-size: 1.5rem;
+        }
+        
+        .hero-section {
+            background: linear-gradient(135deg, #007bff 0%, #0056b3 100%);
+            color: white;
+            padding: 4rem 0;
+            margin-bottom: 2rem;
+        }
+        
+        .table-grid {
+            display: grid;
+            grid-template-columns: repeat(14, 1fr);
+            gap: 8px;
+            max-width: 1000px;
+            margin: 2rem auto;
+            padding: 20px;
+        }
+        
+        .table-cell {
+            aspect-ratio: 1;
+            border: 2px solid #dee2e6;
+            border-radius: 8px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            font-weight: bold;
+            font-size: 14px;
+            transition: all 0.3s ease;
+            position: relative;
+            background-color: white;
+        }
+        
+        .table-cell:hover {
+            transform: scale(1.05);
+            box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+        }
+        
+        .table-available {
+            background-color: #ffffff;
+            color: #333;
+            border-color: #28a745;
+        }
+        
+        .table-pending {
+            background-color: #fff3cd;
+            color: #856404;
+            border-color: #ffc107;
+        }
+        
+        .table-booked {
+            background-color: #f8d7da;
+            color: #721c24;
+            cursor: not-allowed;
+            border-color: #dc3545;
+        }
+        
+        .table-selected {
+            background-color: #007bff;
+            color: white;
+            border-color: #0056b3;
+        }
+        
+        .legend {
+            display: flex;
+            justify-content: center;
+            gap: 30px;
+            margin: 20px 0;
+            flex-wrap: wrap;
+        }
+        
+        .legend-item {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        
+        .legend-color {
+            width: 20px;
+            height: 20px;
+            border-radius: 4px;
+            border: 2px solid #dee2e6;
+        }
+        
+        .booking-summary {
+            background: #e3f2fd;
+            border: 1px solid #2196f3;
+            border-radius: 10px;
+            padding: 20px;
+            margin: 20px 0;
+        }
+        
+        .summary-row {
+            display: flex;
+            justify-content: space-between;
+            margin: 10px 0;
+            padding: 8px 0;
+            border-bottom: 1px solid #dee2e6;
+        }
+        
+        .total-row {
+            font-weight: bold;
+            font-size: 1.2em;
+            color: #0056b3;
+            border-bottom: 2px solid #0056b3;
+        }
+        
+        .admin-stats {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 1rem;
+            margin-bottom: 2rem;
+        }
+        
+        .stat-card {
+            background: white;
+            border-radius: 10px;
+            padding: 1.5rem;
+            text-align: center;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        
+        .stat-number {
+            font-size: 2rem;
+            font-weight: bold;
+            color: #007bff;
+        }
+        
+        .booking-item {
+            background: white;
+            border: 1px solid #dee2e6;
+            border-radius: 8px;
+            padding: 15px;
+            margin-bottom: 10px;
+        }
+        
+        .status-badge {
+            padding: 4px 12px;
+            border-radius: 12px;
+            font-size: 12px;
+            font-weight: bold;
+        }
+        
+        .status-pending {
+            background: #fff3cd;
+            color: #856404;
+        }
+        
+        .status-confirmed {
+            background: #d1ecf1;
+            color: #0c5460;
+        }
+        
+        .status-booked {
+            background: #d4edda;
+            color: #155724;
+        }
+        
+        @media (max-width: 768px) {
+            .table-grid {
+                grid-template-columns: repeat(7, 1fr);
+                gap: 4px;
+            }
+            
+            .table-cell {
+                font-size: 12px;
+            }
+        }
+
+
+        /* เพิ่มในส่วน style */
+.event-image {
+    border: 1px solid #dee2e6;
+    border-radius: 8px;
+    box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+    transition: transform 0.3s ease;
+}
+
+.event-image:hover {
+    transform: scale(1.02);
+}
+
+.image-caption {
+    font-size: 0.9rem;
+    color: #6c757d;
+    margin-top: 10px;
+}
+    </style>
+</head>
+<body>
+    <!-- Navigation -->
+    <nav class="navbar navbar-expand-lg navbar-light bg-light shadow-sm">
+        <div class="container">
+            <a class="navbar-brand" href="#" onclick="showHome()">
+                <i class="bi bi-calendar-event"></i> งานสถาปนาแผนกช่างไฟฟ้ากำลังครบรอบ 50 ปี
+            </a>
+            <div class="navbar-nav ms-auto" id="navbarNav">
+                <div id="authButtons" class="d-flex gap-2">
+                    <button class="btn btn-outline-primary btn-sm" onclick="showLogin()">
+                        <i class="bi bi-box-arrow-in-right"></i> เข้าสู่ระบบ
+                    </button>
+                    <button class="btn btn-primary btn-sm" onclick="showRegister()">
+                        <i class="bi bi-person-plus"></i> บันทึกข้อมูลผู้จอง
+                    </button>
+                    <button class="btn btn-warning btn-sm" onclick="showAdminLogin()">
+                        <i class="bi bi-shield-lock"></i> แอดมิน
+                    </button>
+                </div>
+                <div id="userMenu" class="d-none">
+                    <span id="currentUserNav" class="me-3"></span>
+                    <button class="btn btn-outline-danger btn-sm" onclick="logout()">
+                        <i class="bi bi-box-arrow-right"></i> ออกจากระบบ
+                    </button>
+                </div>
+            </div>
+        </div>
+    </nav>
+
+    <div class="container-fluid">
+        <!-- หน้าหลัก -->
+        <div id="homePage">
+            <div class="hero-section text-center">
+                <div class="container">
+                    <h1 class="display-4 mb-4">
+                        <i class="bi bi-calendar-event"></i> ระบบจองโต๊ะงานสถาปนาแผนกช่างไฟฟ้ากำลังครบรอบ 50 ปี
+                    </h1>
+                    <p class="lead">จองโต๊ะของคุณได้ง่ายๆ ในไม่กี่คลิก</p>
+                    <div class="mt-4">
+                        <button class="btn btn-light btn-lg me-3" onclick="showRegister()">
+                            <i class="bi bi-person-plus"></i> บันทึกข้อมูลผู้จอง
+                        </button>
+                        <button class="btn btn-outline-light btn-lg" onclick="showLogin()">
+                            <i class="bi bi-box-arrow-in-right"></i> เข้าสู่ระบบ
+                        </button>
+                    </div>
+                </div>
+
+
+
+               
+
+            </div>
+
+            <div class="container">
+                <div class="row">
+                    <div class="col-12">
+                        <div class="card shadow">
+
+                             <div class="container mt-4">
+    <div class="row">
+        <div class="col-12">
+            <div class="card shadow mb-4">
+                <div class="card-header bg-primary text-white">
+                    <h3 class="card-title mb-0">
+                        <i class="bi bi-image"></i> รูปภาพสถานที่จัดงาน
+                    </h3>
+                </div>
+                <div class="card-body text-center">
+                    <!-- รูปภาพตัวอย่าง -->
+                    <img src="map1.jpg" 
+                         alt="สถานที่จัดงาน" 
+                         class="img-fluid rounded mb-3"
+                         style="max-height: 400px;">
+                    <p class="text-muted">ผังสถานที่จัดงานสถาปนาแผนกช่างไฟฟ้ากำลังครบรอบ 50 ปี</p>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+
+                            <div class="card-header bg-primary text-white">
+                                <h3 class="card-title mb-0">
+                                    <i class="bi bi-grid-3x3-gap"></i> แผนผังโต๊ะงาน
+                                </h3>
+                            </div>
+                            <div class="card-body">
+                                <div class="alert alert-info">
+                                    <i class="bi bi-info-circle"></i> 
+                                    คลิกที่โต๊ะเพื่อดูรายละเอียด กรุณาเข้าสู่ระบบเพื่อทำการจอง <b>** ตำแหน่งโต๊ะให้อ้างอิงจากรูปผังสถานที่จัดงานฯด้านบน</b>
+                                </div>
+                                
+                                <div class="legend">
+                                    <div class="legend-item">
+                                        <div class="legend-color" style="background-color: white; border-color: #28a745;"></div>
+                                        <span>ว่าง</span>
+                                    </div>
+                                    <div class="legend-item">
+                                        <div class="legend-color" style="background-color: #fff3cd; border-color: #ffc107;"></div>
+                                        <span>รอชำระเงิน</span>
+                                    </div>
+                                    <div class="legend-item">
+                                        <div class="legend-color" style="background-color: #f8d7da; border-color: #dc3545;"></div>
+                                        <span>จองแล้ว</span>
+                                    </div>
+                                </div>
+
+                                <div class="table-grid" id="homeTableGrid">
+                                    <!-- โต๊ะจะถูกสร้างด้วย JavaScript -->
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- หน้าสมัครสมาชิก -->
+        <div id="registerPage" class="d-none">
+            <div class="container mt-4">
+                <div class="row justify-content-center">
+                    <div class="col-md-6">
+                        <div class="card shadow">
+                            <div class="card-header bg-primary text-white">
+                                <h3 class="card-title mb-0">
+                                    <i class="bi bi-person-plus"></i> บันทึกข้อมูลผู้จอง
+                                </h3>
+                            </div>
+                            <div class="card-body">
+                                <form id="registerForm">
+                                    <div class="mb-3">
+                                        <label class="form-label">ชื่อ:</label>
+                                        <input type="text" class="form-control" id="firstName" required>
+                                    </div>
+                                    <div class="mb-3">
+                                        <label class="form-label">นามสกุล:</label>
+                                        <input type="text" class="form-control" id="lastName" required>
+                                    </div>
+                                    <div class="mb-3">
+                                        <label class="form-label">เบอร์โทรศัพท์ (ตัวอย่าง : 0823456789):</label>
+                                        <input type="tel" class="form-control" id="phoneNumber" required 
+       maxlength="10" pattern="0[0-9]{9}" placeholder="">
+                                    </div>
+                                    <div class="d-grid gap-2">
+                                        <button type="submit" class="btn btn-success">
+                                            <i class="bi bi-check-circle"></i> บันทึกข้อมูลผู้จอง
+                                        </button>
+                                        <button type="button" class="btn btn-secondary" onclick="showHome()">
+                                            <i class="bi bi-arrow-left"></i> กลับหน้าหลัก
+                                        </button>
+                                    </div>
+                                </form>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- หน้าเข้าสู่ระบบแอดมิน -->
+        <div id="adminLoginPage" class="d-none">
+            <div class="container mt-4">
+                <div class="row justify-content-center">
+                    <div class="col-md-6">
+                        <div class="card shadow">
+                            <div class="card-header bg-warning text-dark">
+                                <h3 class="card-title mb-0">
+                                    <i class="bi bi-shield-lock"></i> เข้าสู่ระบบแอดมิน
+                                </h3>
+                                <small>สำหรับผู้ดูแลระบบเท่านั้น</small>
+                            </div>
+                            <div class="card-body">
+                                <!--<div class="alert alert-info">
+                                    <strong>ข้อมูลสำหรับทดสอบ:</strong><br>
+                                    ชื่อผู้ใช้: <code>@sbtcadmin</code><br>
+                                    รหัสผ่าน: <code>@sbtcadmin1234</code>
+                                </div>-->
+                                
+                                <form id="adminLoginForm">
+                                    <div class="mb-3">
+                                        <label class="form-label">ชื่อผู้ใช้แอดมิน:</label>
+                                        <input type="text" class="form-control" id="adminLoginUsername" required placeholder="">
+                                    </div>
+                                    <div class="mb-3">
+                                        <label class="form-label">รหัสผ่าน:</label>
+                                        <input type="password" class="form-control" id="adminLoginPassword" required placeholder="">
+                                    </div>
+                                    <div class="d-grid gap-2">
+                                        <button type="submit" class="btn btn-warning">
+                                            <i class="bi bi-box-arrow-in-right"></i> เข้าสู่ระบบแอดมิน
+                                        </button>
+                                        <button type="button" class="btn btn-secondary" onclick="showHome()">
+                                            <i class="bi bi-arrow-left"></i> กลับหน้าหลัก
+                                        </button>
+                                    </div>
+                                </form>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- หน้าเข้าสู่ระบบ -->
+        <div id="loginPage" class="d-none">
+            <div class="container mt-4">
+                <div class="row justify-content-center">
+                    <div class="col-md-6">
+                        <div class="card shadow">
+                            <div class="card-header bg-primary text-white">
+                                <h3 class="card-title mb-0">
+                                    <i class="bi bi-box-arrow-in-right"></i> เข้าสู่ระบบ
+                                </h3>
+                            </div>
+                            <div class="card-body">
+                                <form id="loginForm">
+                                    <div class="mb-3">
+                                        <label class="form-label">เบอร์โทรศัพท์:</label>
+                                        <input type="tel" class="form-control" id="loginPhone" required 
+       maxlength="10" pattern="0[0-9]{9}" placeholder="กรอกเบอร์โทรศัพท์">
+                                   
+                                    </div>
+                                    <div class="mb-3">
+                                        <label class="form-label">รหัสผ่าน (เบอร์โทรศัพท์):</label>
+                                        <input type="password" class="form-control" id="loginPassword" required 
+       maxlength="10" pattern="0[0-9]{9}" placeholder="กรอกเบอร์โทรศัพท์อีกครั้ง">
+                                       
+                                    </div>
+                                    <div class="d-grid gap-2">
+                                        <button type="submit" class="btn btn-primary">
+                                            <i class="bi bi-box-arrow-in-right"></i> เข้าสู่ระบบ
+                                        </button>
+                                        <button type="button" class="btn btn-secondary" onclick="showHome()">
+                                            <i class="bi bi-arrow-left"></i> กลับหน้าหลัก
+                                        </button>
+                                    </div>
+                                </form>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- หน้าจองโต๊ะ -->
+        <div id="bookingPage" class="d-none">
+            <div class="container mt-4">
+                <div class="card shadow">
+                    <div class="card-header bg-success text-white">
+                        <h3 class="card-title mb-0">
+                            <i class="bi bi-calendar-check"></i> จองโต๊ะงานเลี้ยง
+                        </h3>
+                    </div>
+                    <div class="card-body">
+                        <div class="alert alert-info">
+                            <i class="bi bi-person-circle"></i>
+                            <strong>ผู้ใช้:</strong> <span id="currentUser"></span>
+                        </div>
+
+                        <div class="legend">
+                            <div class="legend-item">
+                                <div class="legend-color" style="background-color: white; border-color: #28a745;"></div>
+                                <span>ว่าง</span>
+                            </div>
+                            <div class="legend-item">
+                                <div class="legend-color" style="background-color: #fff3cd; border-color: #ffc107;"></div>
+                                <span>รอชำระเงิน</span>
+                            </div>
+                            <div class="legend-item">
+                                <div class="legend-color" style="background-color: #f8d7da; border-color: #dc3545;"></div>
+                                <span>จองแล้ว</span>
+                            </div>
+                            <div class="legend-item">
+                                <div class="legend-color" style="background-color: #007bff;"></div>
+                                <span>เลือกแล้ว</span>
+                            </div>
+                        </div>
+
+                        <div class="table-grid" id="tableGrid">
+                            <!-- โต๊ะจะถูกสร้างด้วย JavaScript -->
+                        </div>
+
+                        <div id="bookingSummary" class="booking-summary d-none">
+                            <h4><i class="bi bi-clipboard-check"></i> สรุปการจอง</h4>
+                            <div id="selectedTables"></div>
+                            <div class="summary-row total-row">
+                                <span>รวมทั้งหมด:</span>
+                                <span id="totalAmount">0 บาท</span>
+                            </div>
+                            <div class="d-grid gap-2 d-md-flex justify-content-md-center mt-3">
+                                <button class="btn btn-success" onclick="confirmBooking()">
+                                    <i class="bi bi-check-circle"></i> ยืนยันการจอง
+                                </button>
+                                <button class="btn btn-warning" onclick="clearSelection()">
+                                    <i class="bi bi-x-circle"></i> ยกเลิกการเลือก
+                                </button>
+                            </div>
+                        </div>
+
+                        <div class="text-center mt-3">
+                            <button class="btn btn-primary" onclick="refreshTables()">
+                                <i class="bi bi-arrow-clockwise"></i> รีเฟรชโต๊ะ
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- หน้าแอดมิน -->
+        <div id="adminPage" class="d-none">
+            <div class="container mt-4">
+                <!-- Dashboard Stats -->
+                <div class="row mb-4">
+                    <div class="col-12">
+                        <div class="card shadow">
+                            <div class="card-header bg-warning text-dark">
+                                <h3 class="card-title mb-0">
+                                    <i class="bi bi-speedometer2"></i> แดชบอร์ดแอดมิน
+                                </h3>
+                            </div>
+                            <div class="card-body">
+                                <div class="admin-stats" id="adminStats">
+                                    <!-- สถิติจะถูกใส่ที่นี่ -->
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+
+                <div class="card shadow mb-4">
+    <div class="card-header bg-danger text-white">
+        <h4 class="mb-0">
+            <i class="bi bi-arrow-repeat"></i> การรีเซตระบบ
+        </h4>
+    </div>
+    <div class="card-body">
+        <div class="alert alert-warning">
+            <p>ระบบจะรีเซตการจองที่ยังไม่ได้รับการอนุมัติทุกวันเวลา 23:59 น. โดยอัตโนมัติ</p>
+            <p id="resetCountdown"></p>
+        </div>
+        <button class="btn btn-danger" onclick="manualResetPendingBookings()">
+            <i class="bi bi-arrow-repeat"></i> รีเซตการจองที่รออนุมัติตอนนี้
+        </button>
+    </div>
+</div>
+
+
+                <!-- รายการจองที่รอการอนุมัติ -->
+                <div class="row mb-4">
+                    <div class="col-12">
+                        <div class="card shadow">
+                            <div class="card-header bg-info text-white d-flex justify-content-between align-items-center">
+                                <h4 class="mb-0">
+                                    <i class="bi bi-clock-history"></i> รายการจองที่รอการอนุมัติ
+                                </h4>
+                                <button class="btn btn-light btn-sm" onclick="refreshBookings()">
+                                    <i class="bi bi-arrow-clockwise"></i> รีเฟรช
+                                </button>
+                            </div>
+                            <div class="card-body">
+                                <div id="pendingBookings">
+                                    <!-- รายการจองจะแสดงที่นี่ -->
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- รายการจองที่อนุมัติแล้ว -->
+                <div class="row mb-4">
+                    <div class="col-12">
+                        <div class="card shadow">
+                            <div class="card-header bg-success text-white d-flex justify-content-between align-items-center">
+                                <h4 class="mb-0">
+                                    <i class="bi bi-check-circle"></i> รายการจองที่อนุมัติแล้ว
+                                </h4>
+                                <button class="btn btn-light btn-sm" onclick="refreshBookings()">
+                                    <i class="bi bi-arrow-clockwise"></i> รีเฟรช
+                                </button>
+                            </div>
+                            <div class="card-body">
+                                <div id="confirmedBookings">
+                                    <!-- รายการจองที่อนุมัติแล้วจะแสดงที่นี่ -->
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- จัดการโต๊ะ -->
+                <div class="row">
+                    <div class="col-12">
+                        <div class="card shadow">
+                            <div class="card-header bg-primary text-white">
+                                <h4 class="mb-0">
+                                    <i class="bi bi-grid-3x3-gap"></i> จัดการโต๊ะทั้งหมด
+                                </h4>
+                            </div>
+                            <div class="card-body">
+                                <div class="mb-3">
+                                    <button class="btn btn-outline-success me-2" onclick="markTableAvailable()">
+                                        <i class="bi bi-check-square"></i> ทำให้โต๊ะว่าง
+                                    </button>
+                                    <button class="btn btn-outline-danger" onclick="markTableBooked()">
+                                        <i class="bi bi-x-square"></i> ทำให้โต๊ะไม่ว่าง
+                                    </button>
+                                    <div class="mt-2">
+                                        <input type="number" class="form-control d-inline-block" style="width: 150px;" 
+                                               id="tableNumberInput" placeholder="หมายเลขโต๊ะ" min="1" max="112">
+                                    </div>
+                                </div>
+                                
+                                <div class="table-grid" id="adminTableGrid">
+                                    <!-- โต๊ะจะถูกสร้างด้วย JavaScript -->
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Firebase Configuration
+        const firebaseConfig = {
+            apiKey: "AIzaSyClVpWMGilotCNQIkovw4IbVcwsWRxb7Oo",
+            authDomain: "sbtcparty68.firebaseapp.com",
+            projectId: "sbtcparty68",
+            storageBucket: "sbtcparty68.firebasestorage.app",
+            messagingSenderId: "106377620312",
+            appId: "1:106377620312:web:2b703a7379b31989bed32d"
+        };
+
+        // Initialize Firebase
+        firebase.initializeApp(firebaseConfig);
+        const db = firebase.firestore();
+
+        // Global Variables
+        let currentUser = null;
+        let selectedTables = [];
+        let tablePrice = 3500; // ราคาต่อโต๊ะ
+        let allTables = {};
+        let totalTables = 112; // 8 แถว × 14 โต๊ะ
+
+        // Admin Credentials
+        const ADMIN_USERNAME = "@sbtcadmin";
+        const ADMIN_PASSWORD = "@sbtcadmin1234";
+
+        // Page Navigation Functions
+        function showHome() {
+            hideAllPages();
+            document.getElementById('homePage').classList.remove('d-none');
+            generateHomeTableGrid();
+            loadHomeTableStatus();
+            updateNavigation();
+        }
+
+        function showRegister() {
+            hideAllPages();
+            document.getElementById('registerPage').classList.remove('d-none');
+            updateNavigation();
+        }
+
+        function showAdminLogin() {
+            hideAllPages();
+            document.getElementById('adminLoginPage').classList.remove('d-none');
+            updateNavigation();
+        }
+
+        function showLogin() {
+    hideAllPages();
+    const loginPage = document.getElementById('loginPage');
+    loginPage.classList.remove('d-none');
+    
+    // ใช้ setTimeout เพื่อให้แน่ใจว่าเพจแสดงผลก่อนการเลื่อน
+    setTimeout(() => {
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+        document.getElementById('loginPhone').focus();
+    }, 50);
+    
+    updateNavigation();
+}
+
+        function showBooking() {
+            hideAllPages();
+            document.getElementById('bookingPage').classList.remove('d-none');
+            generateTables();
+            loadTables();
+            updateNavigation();
+        }
+
+        function showAdmin() {
+            hideAllPages();
+            document.getElementById('adminPage').classList.remove('d-none');
+            generateAdminTableGrid();
+            loadAdminStats();
+            loadPendingBookings();
+            loadConfirmedBookings();
+            loadTables();
+            updateNavigation();
+        }
+
+        function hideAllPages() {
+            const pages = ['homePage', 'registerPage', 'loginPage', 'adminLoginPage', 'bookingPage', 'adminPage'];
+            pages.forEach(page => {
+                document.getElementById(page).classList.add('d-none');
+            });
+        }
+
+        function updateNavigation() {
+            const authButtons = document.getElementById('authButtons');
+            const userMenu = document.getElementById('userMenu');
+            const currentUserNav = document.getElementById('currentUserNav');
+
+            if (currentUser) {
+                authButtons.classList.add('d-none');
+                userMenu.classList.remove('d-none');
+                if (currentUser.isAdmin) {
+                    currentUserNav.innerHTML = `<i class="bi bi-shield-check"></i> ${currentUser.username}`;
+                } else {
+                    currentUserNav.innerHTML = `<i class="bi bi-person-circle"></i> ${currentUser.firstName} ${currentUser.lastName}`;
+                }
+            } else {
+                authButtons.classList.remove('d-none');
+                userMenu.classList.add('d-none');
+            }
+        }
+
+        // Generate Home Table Grid (8x14)
+        function generateHomeTableGrid() {
+            const tableGrid = document.getElementById('homeTableGrid');
+            tableGrid.innerHTML = '';
+            
+            for (let i = 1; i <= totalTables; i++) {
+                const tableCell = document.createElement('div');
+                tableCell.className = 'table-cell table-available';
+                tableCell.textContent = i;
+                tableCell.dataset.tableId = i;
+                tableCell.addEventListener('click', () => handleTableClick(i));
+                tableGrid.appendChild(tableCell);
+            }
+        }
+
+        // Handle table click on home page
+        function handleTableClick(tableId) {
+            if (!currentUser) {
+                // ถ้ายังไม่ได้เข้าสู่ระบบ ให้แสดง modal หรือ alert
+                if (confirm('กรุณาเข้าสู่ระบบก่อนทำการจอง\nต้องการไปหน้าเข้าสู่ระบบหรือไม่?')) {
+                    showLogin();
+                }
+                return;
+            }
+            
+            // ถ้าเข้าสู่ระบบแล้ว ให้ไปหน้าจอง
+            showBooking();
+        }
+
+        // Load table status for home page
+        async function loadHomeTableStatus() {
+            try {
+                const tablesSnapshot = await db.collection('tables').get();
+                allTables = {};
+                
+                tablesSnapshot.forEach(doc => {
+                    const data = doc.data();
+                    allTables[data.tableNumber] = {
+                        id: doc.id,
+                        ...data
+                    };
+                });
+                
+                updateHomeTableDisplay();
+            } catch (error) {
+                console.error('Error loading tables:', error);
+            }
+        }
+
+        // Update home table display
+        function updateHomeTableDisplay() {
+            for (let i = 1; i <= totalTables; i++) {
+                const tableCell = document.querySelector(`#homeTableGrid [data-table-id="${i}"]`);
+                if (!tableCell) continue;
+                
+                const tableData = allTables[i];
+                
+                if (tableData) {
+                    switch (tableData.status) {
+                        case 'pending':
+                            tableCell.className = 'table-cell table-pending';
+                            break;
+                        case 'booked':
+                            tableCell.className = 'table-cell table-booked';
+                            break;
+                        default:
+                            tableCell.className = 'table-cell table-available';
+                    }
+                } else {
+                    tableCell.className = 'table-cell table-available';
+                }
+            }
+        }
+
+        // User Registration
+        document.getElementById('registerForm').addEventListener('submit', async (e) => {
+    e.preventDefault();
+    
+    const firstName = document.getElementById('firstName').value;
+    const lastName = document.getElementById('lastName').value;
+    const phoneNumber = document.getElementById('phoneNumber').value;
+    
+    // Validate phone number format
+    if (!validatePhoneNumber(phoneNumber)) {
+        alert('กรุณากรอกเบอร์โทรศัพท์ให้ถูกต้อง (10 หลัก เริ่มต้นด้วย 0)');
+        return;
+    }
+    
+    try {
+        // เช็คว่าเบอร์นี้มีอยู่แล้วหรือไม่
+        const userQuery = await db.collection('users').where('phone', '==', phoneNumber).get();
+        
+        if (!userQuery.empty) {
+            alert('เบอร์โทรศัพท์นี้ถูกใช้แล้ว');
+            return;
+        }
+        
+        // สร้างผู้ใช้ใหม่
+        await db.collection('users').add({
+            firstName: firstName,
+            lastName: lastName,
+            phone: phoneNumber,
+            username: `${firstName}_${lastName}`,
+            createdAt: firebase.firestore.FieldValue.serverTimestamp()
+        });
+        
+        alert('ลงทะเบียนข้อมูลผู้จองสำเร็จ!');
+        document.getElementById('registerForm').reset();
+        showLogin();
+    } catch (error) {
+        console.error('Error:', error);
+        alert('เกิดข้อผิดพลาด กรุณาลองใหม่อีกครั้ง');
+    }
+});
+
+        // Admin Login
+        document.getElementById('adminLoginForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            
+            const username = document.getElementById('adminLoginUsername').value;
+            const password = document.getElementById('adminLoginPassword').value;
+            
+            // ตรวจสอบข้อมูลแอดมิน
+            if (username === ADMIN_USERNAME && password === ADMIN_PASSWORD) {
+                currentUser = {
+                    id: 'admin_' + Date.now(),
+                    firstName: 'System',
+                    lastName: 'Administrator',
+                    phone: 'admin',
+                    username: 'Administrator',
+                    isAdmin: true
+                };
+                
+                document.getElementById('adminLoginForm').reset();
+                //alert('เข้าสู่ระบบแอดมินสำเร็จ!');
+                showAdmin();
+            } else {
+                alert('ชื่อผู้ใช้หรือรหัสผ่านไม่ถูกต้อง');
+                document.getElementById('adminLoginForm').reset();
+            }
+        });
+
+        // User Login
+        document.getElementById('loginForm').addEventListener('submit', async (e) => {
+    e.preventDefault();
+    
+    const phone = document.getElementById('loginPhone').value;
+    const password = document.getElementById('loginPassword').value;
+    
+    // Validate phone number format
+    if (!validatePhoneNumber(phone) || !validatePhoneNumber(password)) {
+        alert('กรุณากรอกเบอร์โทรศัพท์ให้ถูกต้อง (10 หลัก เริ่มต้นด้วย 0)');
+        return;
+    }
+    
+    // ตรวจสอบว่าเบอร์โทรและรหัสผ่านเหมือนกันหรือไม่
+    if (phone !== password) {
+        alert('รหัสผ่านต้องเป็นเบอร์โทรศัพท์เดียวกัน');
+        return;
+    }
+    
+    try {
+        // ค้นหาผู้ใช้ด้วยเบอร์โทรศัพท์
+        const userQuery = await db.collection('users')
+            .where('phone', '==', phone)
+            .get();
+        
+        if (userQuery.empty) {
+            alert('ไม่พบเบอร์โทรศัพท์นี้ในระบบ กรุณาบันทึกข้อมูลการจองก่อน');
+            return;
+        }
+        
+        const userData = userQuery.docs[0].data();
+        userData.id = userQuery.docs[0].id;
+        
+        currentUser = userData;
+        document.getElementById('currentUser').textContent = `${userData.firstName} ${userData.lastName} (${userData.phone})`;
+        
+        //alert('เข้าสู่ระบบสำเร็จ!');
+        showBooking();
+    } catch (error) {
+        console.error('Error:', error);
+        alert('เกิดข้อผิดพลาด กรุณาลองใหม่อีกครั้ง');
+    }
+});
+
+        // Generate Table Grid for booking page
+        function generateTables() {
+            const tableGrid = document.getElementById('tableGrid');
+            tableGrid.innerHTML = '';
+            
+            for (let i = 1; i <= totalTables; i++) {
+                const tableCell = document.createElement('div');
+                tableCell.className = 'table-cell table-available';
+                tableCell.textContent = i;
+                tableCell.dataset.tableId = i;
+                tableCell.addEventListener('click', () => selectTable(i));
+                tableGrid.appendChild(tableCell);
+            }
+        }
+
+        // Generate Admin Table Grid
+        function generateAdminTableGrid() {
+            const tableGrid = document.getElementById('adminTableGrid');
+            tableGrid.innerHTML = '';
+            
+            for (let i = 1; i <= totalTables; i++) {
+                const tableCell = document.createElement('div');
+                tableCell.className = 'table-cell table-available';
+                tableCell.textContent = i;
+                tableCell.dataset.tableId = i;
+                tableCell.addEventListener('click', () => selectAdminTable(i));
+                tableGrid.appendChild(tableCell);
+            }
+        }
+
+       let selectedAdminTable = null;
+
+function selectAdminTable(tableId) {
+    // ยกเลิกการเลือกเก่า
+    if (selectedAdminTable) {
+        const oldCell = document.querySelector(`#adminTableGrid [data-table-id="${selectedAdminTable}"]`);
+        if (oldCell) {
+            oldCell.classList.remove('table-selected');
+        }
+    }
+    
+    // เลือกใหม่
+    selectedAdminTable = tableId;
+    const tableCell = document.querySelector(`#adminTableGrid [data-table-id="${tableId}"]`);
+    tableCell.classList.add('table-selected');
+    
+    // อัพเดทค่าใน input with alphabetic label
+    const tableLabel = getTableLabel(tableId);
+    document.getElementById('tableNumberInput').value = tableLabel;
+}
+
+        // Load Table Status from Database
+        async function loadTables() {
+            try {
+                const tablesSnapshot = await db.collection('tables').get();
+                allTables = {};
+                
+                tablesSnapshot.forEach(doc => {
+                    const data = doc.data();
+                    allTables[data.tableNumber] = {
+                        id: doc.id,
+                        ...data
+                    };
+                });
+                
+                updateTableDisplay();
+                updateAdminTableDisplay();
+            } catch (error) {
+                console.error('Error loading tables:', error);
+            }
+        }
+
+        // Update Table Display
+        function updateTableDisplay() {
+            for (let i = 1; i <= totalTables; i++) {
+                const tableCell = document.querySelector(`#tableGrid [data-table-id="${i}"]`);
+                if (!tableCell) continue;
+                
+                const tableData = allTables[i];
+                
+                if (tableData) {
+                    switch (tableData.status) {
+                        case 'pending':
+                            tableCell.className = 'table-cell table-pending';
+                            break;
+                        case 'booked':
+                            tableCell.className = 'table-cell table-booked';
+                            break;
+                        default:
+                            tableCell.className = 'table-cell table-available';
+                    }
+                } else {
+                    tableCell.className = 'table-cell table-available';
+                }
+                
+                // แสดงโต๊ะที่เลือกไว้
+                if (selectedTables.includes(i)) {
+                    tableCell.classList.add('table-selected');
+                }
+            }
+        }
+
+        // Update Admin Table Display
+        function updateAdminTableDisplay() {
+            for (let i = 1; i <= totalTables; i++) {
+                const tableCell = document.querySelector(`#adminTableGrid [data-table-id="${i}"]`);
+                if (!tableCell) continue;
+                
+                const tableData = allTables[i];
+                
+                if (tableData) {
+                    switch (tableData.status) {
+                        case 'pending':
+                            tableCell.className = 'table-cell table-pending';
+                            break;
+                        case 'booked':
+                            tableCell.className = 'table-cell table-booked';
+                            break;
+                        default:
+                            tableCell.className = 'table-cell table-available';
+                    }
+                } else {
+                    tableCell.className = 'table-cell table-available';
+                }
+                
+                // รักษาการเลือกของแอดมิน
+                if (selectedAdminTable === i) {
+                    tableCell.classList.add('table-selected');
+                }
+            }
+        }
+
+        // Select Table
+        function selectTable(tableId) {
+            const tableData = allTables[tableId];
+            
+            // ไม่สามารถเลือกโต๊ะที่จองแล้วได้
+            if (tableData && tableData.status === 'booked') {
+                alert('โต๊ะนี้ถูกจองแล้ว');
+                return;
+            }
+            
+            // ไม่สามารถเลือกโต๊ะที่รอชำระเงิน (ของคนอื่น) ได้
+            if (tableData && tableData.status === 'pending' && tableData.userId !== currentUser.id) {
+                alert('โต๊ะนี้อยู่ระหว่างรอชำระเงิน');
+                return;
+            }
+            
+            const tableCell = document.querySelector(`#tableGrid [data-table-id="${tableId}"]`);
+            
+            if (selectedTables.includes(tableId)) {
+                // ยกเลิกการเลือก
+                selectedTables = selectedTables.filter(id => id !== tableId);
+                tableCell.classList.remove('table-selected');
+            } else {
+                // เลือกโต๊ะ
+                selectedTables.push(tableId);
+                tableCell.classList.add('table-selected');
+            }
+            
+            updateBookingSummary();
+        }
+
+        // Update Booking Summary
+        function updateBookingSummary() {
+    const summary = document.getElementById('bookingSummary');
+    const selectedTablesDiv = document.getElementById('selectedTables');
+    const totalAmount = document.getElementById('totalAmount');
+    
+    if (selectedTables.length === 0) {
+        summary.classList.add('d-none');
+        return;
+    }
+    
+    summary.classList.remove('d-none');
+    
+    selectedTablesDiv.innerHTML = '';
+    selectedTables.forEach(tableId => {
+        const tableLabel = getTableLabel(tableId);
+        const row = document.createElement('div');
+        row.className = 'summary-row';
+        row.innerHTML = `
+            <span>โต๊ะ ${tableLabel}</span>
+            <span>${tablePrice.toLocaleString()} บาท</span>
+        `;
+        selectedTablesDiv.appendChild(row);
+    });
+    
+    const total = selectedTables.length * tablePrice;
+    totalAmount.textContent = `${total.toLocaleString()} บาท`;
+}
+
+// Updated confirmBooking to store table labels
+async function confirmBooking() {
+    if (selectedTables.length === 0) {
+        alert('กรุณาเลือกโต๊ะก่อน');
+        return;
+    }
+    
+    const total = selectedTables.length * tablePrice;
+    const tableLabels = selectedTables.map(id => getTableLabel(id)).join(', ');
+    const confirmMessage = `ต้องการจองโต๊ะ ${selectedTables.length} โต๊ะ\nโต๊ะที่เลือก: ${tableLabels}\nจำนวนเงิน ${total.toLocaleString()} บาท\nกรุณายืนยันการจอง`;
+    
+    if (!confirm(confirmMessage)) {
+        return;
+    }
+    
+    try {
+        // บันทึกการจองแต่ละโต๊ะ
+        const batch = db.batch();
+        
+        for (const tableId of selectedTables) {
+            const tableLabel = getTableLabel(tableId);
+            const tableRef = db.collection('tables').doc();
+            batch.set(tableRef, {
+                tableNumber: tableId,
+                tableLabel: tableLabel, // Store label for display
+                userId: currentUser.id,
+                userName: `${currentUser.firstName} ${currentUser.lastName}`,
+                userPhone: currentUser.phone,
+                status: 'pending',
+                price: tablePrice,
+                bookedAt: firebase.firestore.FieldValue.serverTimestamp()
+            });
+        }
+        
+        await batch.commit();
+        
+        alert('จองโต๊ะสำเร็จ! รอการอนุมัติจากแอดมิน');
+        selectedTables = [];
+        loadTables();
+        updateBookingSummary();
+    } catch (error) {
+        console.error('Error booking tables:', error);
+        alert('เกิดข้อผิดพลาด กรุณาลองใหม่อีกครั้ง');
+    }
+}
+        // Clear Selection
+        function clearSelection() {
+            selectedTables = [];
+            updateTableDisplay();
+            updateBookingSummary();
+        }
+
+        // Confirm Booking
+        async function confirmBooking() {
+            if (selectedTables.length === 0) {
+                alert('กรุณาเลือกโต๊ะก่อน');
+                return;
+            }
+            
+            const total = selectedTables.length * tablePrice;
+            const confirmMessage = `ต้องการจองโต๊ะ ${selectedTables.length} โต๊ะ\nจำนวนเงิน ${total.toLocaleString()} บาท\nกรุณายืนยันการจอง`;
+            
+            if (!confirm(confirmMessage)) {
+                return;
+            }
+            
+            try {
+                // บันทึกการจองแต่ละโต๊ะ
+                const batch = db.batch();
+                
+                for (const tableId of selectedTables) {
+                    const tableRef = db.collection('tables').doc();
+                    batch.set(tableRef, {
+                        tableNumber: tableId,
+                        userId: currentUser.id,
+                        userName: `${currentUser.firstName} ${currentUser.lastName}`,
+                        userPhone: currentUser.phone,
+                        status: 'pending',
+                        price: tablePrice,
+                        bookedAt: firebase.firestore.FieldValue.serverTimestamp()
+                    });
+                }
+                
+                await batch.commit();
+                
+                alert('จองโต๊ะสำเร็จ! รอการอนุมัติจากแอดมิน');
+                selectedTables = [];
+                loadTables();
+                updateBookingSummary();
+            } catch (error) {
+                console.error('Error booking tables:', error);
+                alert('เกิดข้อผิดพลาด กรุณาลองใหม่อีกครั้ง');
+            }
+        }
+
+        // Refresh Tables
+        function refreshTables() {
+            loadTables();
+            if (document.getElementById('homePage').classList.contains('d-none') === false) {
+                loadHomeTableStatus();
+            }
+        }
+
+        // Load Admin Statistics
+        async function loadAdminStats() {
+            try {
+                const tablesSnapshot = await db.collection('tables').get();
+                const usersSnapshot = await db.collection('users').get();
+                
+                let availableTables = totalTables;
+                let pendingTables = 0;
+                let bookedTables = 0;
+                let totalRevenue = 0;
+                
+                tablesSnapshot.forEach(doc => {
+                    const data = doc.data();
+                    if (data.status === 'pending') {
+                        pendingTables++;
+                        availableTables--;
+                    } else if (data.status === 'booked') {
+                        bookedTables++;
+                        availableTables--;
+                        totalRevenue += data.price || tablePrice;
+                    }
+                });
+                
+                const statsHtml = `
+                    <div class="stat-card">
+                        <div class="stat-number">${availableTables}</div>
+                        <div class="text-muted">โต๊ะว่าง</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-number">${pendingTables}</div>
+                        <div class="text-muted">รอชำระเงิน</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-number">${bookedTables}</div>
+                        <div class="text-muted">จองแล้ว</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-number">${usersSnapshot.size}</div>
+                        <div class="text-muted">สมาชิก</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-number">${totalRevenue.toLocaleString()}</div>
+                        <div class="text-muted">รายได้ (บาท)</div>
+                    </div>
+                `;
+                
+                document.getElementById('adminStats').innerHTML = statsHtml;
+            } catch (error) {
+                console.error('Error loading admin stats:', error);
+            }
+        }
+
+        // Load Pending Bookings for Admin
+        async function loadPendingBookings() {
+    try {
+        const pendingSnapshot = await db.collection('tables')
+            .where('status', '==', 'pending')
+            .get();
+        
+        const pendingBookingsDiv = document.getElementById('pendingBookings');
+        pendingBookingsDiv.innerHTML = '';
+        
+        if (pendingSnapshot.empty) {
+            pendingBookingsDiv.innerHTML = '<div class="alert alert-info">ไม่มีรายการจองที่รอการอนุมัติ</div>';
+            return;
+        }
+        
+        const bookingsByUser = {};
+        
+        pendingSnapshot.forEach(doc => {
+            const data = doc.data();
+            const userId = data.userId;
+            
+            if (!bookingsByUser[userId]) {
+                bookingsByUser[userId] = {
+                    userName: data.userName,
+                    userPhone: data.userPhone,
+                    tables: [],
+                    totalAmount: 0
+                };
+            }
+            
+            bookingsByUser[userId].tables.push({
+                id: doc.id,
+                tableNumber: data.tableNumber,
+                tableLabel: data.tableLabel || getTableLabel(data.tableNumber), // Use stored label or generate
+                price: data.price
+            });
+            bookingsByUser[userId].totalAmount += data.price;
+        });
+        
+        Object.keys(bookingsByUser).forEach(userId => {
+            const booking = bookingsByUser[userId];
+            const bookingItem = document.createElement('div');
+            bookingItem.className = 'booking-item';
+            
+            // Sort and display table labels
+            const tableLabels = booking.tables
+                .map(t => t.tableLabel)
+                .sort()
+                .join(', ');
+            
+            bookingItem.innerHTML = `
+                <div class="d-flex justify-content-between align-items-center">
+                    <div>
+                        <h6 class="mb-1">
+                            <i class="bi bi-person"></i> ${booking.userName}
+                        </h6>
+                        <p class="mb-1">
+                            <i class="bi bi-telephone"></i> ${booking.userPhone}
+                        </p>
+                        <p class="mb-1">
+                            <i class="bi bi-grid-3x3-gap"></i> โต๊ะ: ${tableLabels}
+                        </p>
+                        <span class="status-badge status-pending">รอชำระเงิน</span>
+                    </div>
+                    <div class="text-end">
+                        <div class="h5 text-primary mb-2">${booking.totalAmount.toLocaleString()} บาท</div>
+                        <div class="btn-group">
+                            <button class="btn btn-success btn-sm" onclick="approveBooking('${userId}')">
+                                <i class="bi bi-check-circle"></i> อนุมัติ
+                            </button>
+                            <button class="btn btn-danger btn-sm" onclick="rejectBooking('${userId}')">
+                                <i class="bi bi-x-circle"></i> ปฏิเสธ
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            `;
+            pendingBookingsDiv.appendChild(bookingItem);
+        });
+    } catch (error) {
+        console.error('Error loading pending bookings:', error);
+    }
+}
+
+        // Load Confirmed Bookings for Admin
+        async function loadConfirmedBookings() {
+    try {
+        const confirmedSnapshot = await db.collection('tables')
+            .where('status', '==', 'booked')
+            .get();
+        
+        const confirmedBookingsDiv = document.getElementById('confirmedBookings');
+        confirmedBookingsDiv.innerHTML = '';
+        
+        if (confirmedSnapshot.empty) {
+            confirmedBookingsDiv.innerHTML = '<div class="alert alert-info">ไม่มีรายการจองที่อนุมัติแล้ว</div>';
+            return;
+        }
+        
+        const bookingsByUser = {};
+        
+        confirmedSnapshot.forEach(doc => {
+            const data = doc.data();
+            const userId = data.userId;
+            
+            if (!bookingsByUser[userId]) {
+                bookingsByUser[userId] = {
+                    userName: data.userName,
+                    userPhone: data.userPhone,
+                    tables: [],
+                    totalAmount: 0
+                };
+            }
+            
+            bookingsByUser[userId].tables.push({
+                id: doc.id,
+                tableNumber: data.tableNumber,
+                tableLabel: data.tableLabel || getTableLabel(data.tableNumber), // Use stored label or generate
+                price: data.price
+            });
+            bookingsByUser[userId].totalAmount += data.price;
+        });
+        
+        Object.keys(bookingsByUser).forEach(userId => {
+            const booking = bookingsByUser[userId];
+            const bookingItem = document.createElement('div');
+            bookingItem.className = 'booking-item';
+            
+            // Sort and display table labels
+            const tableLabels = booking.tables
+                .map(t => t.tableLabel)
+                .sort()
+                .join(', ');
+            
+            bookingItem.innerHTML = `
+                <div class="d-flex justify-content-between align-items-center">
+                    <div>
+                        <h6 class="mb-1">
+                            <i class="bi bi-person"></i> ${booking.userName}
+                        </h6>
+                        <p class="mb-1">
+                            <i class="bi bi-telephone"></i> ${booking.userPhone}
+                        </p>
+                        <p class="mb-1">
+                            <i class="bi bi-grid-3x3-gap"></i> โต๊ะ: ${tableLabels}
+                        </p>
+                        <span class="status-badge status-booked">จองแล้ว</span>
+                    </div>
+                    <div class="text-end">
+                        <div class="h5 text-success mb-2">${booking.totalAmount.toLocaleString()} บาท</div>
+                        <button class="btn btn-outline-danger btn-sm" onclick="cancelBooking('${userId}')">
+                            <i class="bi bi-trash"></i> ยกเลิก
+                        </button>
+                    </div>
+                </div>
+            `;
+            confirmedBookingsDiv.appendChild(bookingItem);
+        });
+    } catch (error) {
+        console.error('Error loading confirmed bookings:', error);
+    }
+}
+
+        // Admin table management functions
+        async function markTableAvailable() {
+    let tableInput = document.getElementById('tableNumberInput').value;
+    let tableNumber;
+    
+    // Check if input is alphabetic format (like A1, B2) or numeric
+    if (/^[A-N][1-8]$/.test(tableInput.toUpperCase())) {
+        // Convert alphabetic to numeric
+        tableNumber = getTableNumberFromLabel(tableInput.toUpperCase());
+    } else if (selectedAdminTable) {
+        // Use selected table
+        tableNumber = selectedAdminTable;
+    } else {
+        // Try to parse as number
+        tableNumber = parseInt(tableInput);
+    }
+    
+    if (!tableNumber || tableNumber < 1 || tableNumber > totalTables) {
+        alert('กรุณาเลือกหมายเลขโต๊ะที่ถูกต้อง (A1-N8 หรือ 1-112)');
+        return;
+    }
+    
+    const tableLabel = getTableLabel(tableNumber);
+    
+    if (!confirm(`ต้องการทำให้โต๊ะ ${tableLabel} ว่างหรือไม่?`)) {
+        return;
+    }
+    
+    try {
+        // ลบการจองของโต๊ะนี้
+        const tableQuery = await db.collection('tables')
+            .where('tableNumber', '==', tableNumber)
+            .get();
+        
+        const batch = db.batch();
+        tableQuery.forEach(doc => {
+            batch.delete(doc.ref);
+        });
+        
+        await batch.commit();
+        
+        alert(`ทำให้โต๊ะ ${tableLabel} ว่างแล้ว`);
+        loadTables();
+        loadAdminStats();
+        refreshBookings();
+    } catch (error) {
+        console.error('Error marking table available:', error);
+        alert('เกิดข้อผิดพลาด กรุณาลองใหม่อีกครั้ง');
+    }
+}
+
+        async function markTableBooked() {
+    let tableInput = document.getElementById('tableNumberInput').value;
+    let tableNumber;
+    
+    // Check if input is alphabetic format (like A1, B2) or numeric
+    if (/^[A-N][1-8]$/.test(tableInput.toUpperCase())) {
+        // Convert alphabetic to numeric
+        tableNumber = getTableNumberFromLabel(tableInput.toUpperCase());
+    } else if (selectedAdminTable) {
+        // Use selected table
+        tableNumber = selectedAdminTable;
+    } else {
+        // Try to parse as number
+        tableNumber = parseInt(tableInput);
+    }
+    
+    if (!tableNumber || tableNumber < 1 || tableNumber > totalTables) {
+        alert('กรุณาเลือกหมายเลขโต๊ะที่ถูกต้อง (A1-N8 หรือ 1-112)');
+        return;
+    }
+    
+    const tableLabel = getTableLabel(tableNumber);
+    
+    if (!confirm(`ต้องการทำให้โต๊ะ ${tableLabel} ไม่ว่างหรือไม่?`)) {
+        return;
+    }
+    
+    try {
+        // เช็คว่าโต๊ะนี้มีการจองอยู่แล้วหรือไม่
+        const existingBooking = await db.collection('tables')
+            .where('tableNumber', '==', tableNumber)
+            .get();
+        
+        if (!existingBooking.empty) {
+            alert(`โต๊ะ ${tableLabel} มีการจองอยู่แล้ว`);
+            return;
+        }
+        
+        // สร้างการจองใหม่
+        await db.collection('tables').add({
+            tableNumber: tableNumber,
+            tableLabel: tableLabel, // Store label for display
+            userId: 'admin_reserved',
+            userName: 'ผู้ดูแลระบบ',
+            userPhone: 'admin',
+            status: 'booked',
+            price: tablePrice,
+            bookedAt: firebase.firestore.FieldValue.serverTimestamp()
+        });
+        
+        alert(`ทำให้โต๊ะ ${tableLabel} ไม่ว่างแล้ว`);
+        loadTables();
+        loadAdminStats();
+        refreshBookings();
+    } catch (error) {
+        console.error('Error marking table booked:', error);
+        alert('เกิดข้อผิดพลาด กรุณาลองใหม่อีกครั้ง');
+    }
+}
+
+
+        // Approve Booking
+        async function approveBooking(userId) {
+            if (!confirm('ต้องการอนุมัติการจองนี้หรือไม่?')) {
+                return;
+            }
+            
+            try {
+                const pendingSnapshot = await db.collection('tables')
+                    .where('userId', '==', userId)
+                    .where('status', '==', 'pending')
+                    .get();
+                
+                const batch = db.batch();
+                
+                pendingSnapshot.forEach(doc => {
+                    batch.update(doc.ref, { status: 'booked' });
+                });
+                
+                await batch.commit();
+                
+                alert('อนุมัติการจองสำเร็จ!');
+                refreshBookings();
+                loadAdminStats();
+                loadTables();
+            } catch (error) {
+                console.error('Error approving booking:', error);
+                alert('เกิดข้อผิดพลาด กรุณาลองใหม่อีกครั้ง');
+            }
+        }
+
+        // Reject Booking
+        async function rejectBooking(userId) {
+            if (!confirm('ต้องการปฏิเสธการจองนี้หรือไม่?')) {
+                return;
+            }
+            
+            try {
+                const pendingSnapshot = await db.collection('tables')
+                    .where('userId', '==', userId)
+                    .where('status', '==', 'pending')
+                    .get();
+                
+                const batch = db.batch();
+                
+                pendingSnapshot.forEach(doc => {
+                    batch.delete(doc.ref);
+                });
+                
+                await batch.commit();
+                
+                alert('ปฏิเสธการจองสำเร็จ!');
+                refreshBookings();
+                loadAdminStats();
+                loadTables();
+            } catch (error) {
+                console.error('Error rejecting booking:', error);
+                alert('เกิดข้อผิดพลาด กรุณาลองใหม่อีกครั้ง');
+            }
+        }
+
+        // Cancel Booking (for confirmed bookings)
+        async function cancelBooking(userId) {
+            if (!confirm('ต้องการยกเลิกการจองนี้หรือไม่?')) {
+                return;
+            }
+            
+            try {
+                const bookedSnapshot = await db.collection('tables')
+                    .where('userId', '==', userId)
+                    .where('status', '==', 'booked')
+                    .get();
+                
+                const batch = db.batch();
+                
+                bookedSnapshot.forEach(doc => {
+                    batch.delete(doc.ref);
+                });
+                
+                await batch.commit();
+                
+                alert('ยกเลิกการจองสำเร็จ!');
+                refreshBookings();
+                loadAdminStats();
+                loadTables();
+            } catch (error) {
+                console.error('Error canceling booking:', error);
+                alert('เกิดข้อผิดพลาด กรุณาลองใหม่อีกครั้ง');
+            }
+        }
+
+        // Refresh Bookings
+        function refreshBookings() {
+            loadPendingBookings();
+            loadConfirmedBookings();
+        }
+
+        // Logout
+        function logout() {
+            if (confirm('ต้องการออกจากระบบหรือไม่?')) {
+                currentUser = null;
+                selectedTables = [];
+                selectedAdminTable = null;
+                showHome();
+            }
+        }
+
+        // Initialize App
+        document.addEventListener('DOMContentLoaded', function() {
+            showHome();
+        });
+
+
+        // Helper function to convert table number to alphabetic format (A1-N8)
+function getTableLabel(tableNumber) {
+    // Convert 1-112 to A1-N8 format
+    // 8 tables per row, 14 rows (A-N)
+    const row = Math.ceil(tableNumber / 8); // Row number (1-14)
+    const col = ((tableNumber - 1) % 8) + 1; // Column number (1-8)
+    const rowLetter = String.fromCharCode(64 + row); // Convert to A-N (A=65, so 64+1=65=A)
+    return `${rowLetter}${col}`;
+}
+
+// Helper function to convert alphabetic format back to table number
+function getTableNumberFromLabel(label) {
+    // Convert A1-N8 format back to 1-112
+    const rowLetter = label.charAt(0);
+    const col = parseInt(label.substring(1));
+    const row = rowLetter.charCodeAt(0) - 64; // Convert A-N to 1-14
+    return (row - 1) * 8 + col;
+}
+
+// Generate Table Grid for booking page with alphabetic labels
+function generateTables() {
+    const tableGrid = document.getElementById('tableGrid');
+    tableGrid.innerHTML = '';
+    
+    for (let i = 1; i <= totalTables; i++) {
+        const tableCell = document.createElement('div');
+        tableCell.className = 'table-cell table-available';
+        tableCell.textContent = getTableLabel(i); // Use alphabetic label
+        tableCell.dataset.tableId = i; // Keep numeric ID for backend
+        tableCell.dataset.tableLabel = getTableLabel(i); // Store label for reference
+        tableCell.addEventListener('click', () => selectTable(i));
+        tableGrid.appendChild(tableCell);
+    }
+}
+
+// Generate Admin Table Grid with alphabetic labels
+function generateAdminTableGrid() {
+    const tableGrid = document.getElementById('adminTableGrid');
+    tableGrid.innerHTML = '';
+    
+    for (let i = 1; i <= totalTables; i++) {
+        const tableCell = document.createElement('div');
+        tableCell.className = 'table-cell table-available';
+        tableCell.textContent = getTableLabel(i); // Use alphabetic label
+        tableCell.dataset.tableId = i; // Keep numeric ID for backend
+        tableCell.dataset.tableLabel = getTableLabel(i); // Store label for reference
+        tableCell.addEventListener('click', () => selectAdminTable(i));
+        tableGrid.appendChild(tableCell);
+    }
+}
+
+// Generate Home Table Grid with alphabetic labels
+function generateHomeTableGrid() {
+    const tableGrid = document.getElementById('homeTableGrid');
+    tableGrid.innerHTML = '';
+    
+    for (let i = 1; i <= totalTables; i++) {
+        const tableCell = document.createElement('div');
+        tableCell.className = 'table-cell table-available';
+        tableCell.textContent = getTableLabel(i); // Use alphabetic label
+        tableCell.dataset.tableId = i; // Keep numeric ID for backend
+        tableCell.dataset.tableLabel = getTableLabel(i); // Store label for reference
+        tableCell.addEventListener('click', () => handleTableClick(i));
+        tableGrid.appendChild(tableCell);
+    }
+}
+
+// Function to format phone number to 0000000000 format
+function formatPhoneNumber(input) {
+    // Remove all non-numeric characters
+    let value = input.value.replace(/\D/g, '');
+    
+    // Limit to 10 digits
+    if (value.length > 10) {
+        value = value.slice(0, 10);
+    }
+    
+    // Update the input value
+    input.value = value;
+}
+
+// Function to validate phone number format
+function validatePhoneNumber(phoneNumber) {
+    // Check if it's exactly 10 digits and starts with 0
+    const phoneRegex = /^0\d{9}$/;
+    return phoneRegex.test(phoneNumber);
+}
+
+// Add event listeners to phone number inputs
+document.addEventListener('DOMContentLoaded', function() {
+    // Get all phone number inputs
+    const phoneInputs = [
+        document.getElementById('phoneNumber'), // Registration form
+        document.getElementById('loginPhone')   // Login form
+    ];
+    
+    phoneInputs.forEach(input => {
+        if (input) {
+            // Format on input
+            input.addEventListener('input', function() {
+                formatPhoneNumber(this);
+            });
+            
+            // Validate on blur
+            input.addEventListener('blur', function() {
+                if (this.value && !validatePhoneNumber(this.value)) {
+                    this.setCustomValidity('กรุณากรอกเบอร์โทรศัพท์ 10 หลัก เริ่มต้นด้วย 0');
+                    this.reportValidity();
+                } else {
+                    this.setCustomValidity('');
+                }
+            });
+            
+            // Set input attributes
+            this.setAttribute('maxlength', '10');
+            this.setAttribute('pattern', '0[0-9]{9}');
+            this.setAttribute('placeholder', '0812345678');
+        }
+    });
+});
+
+
+async function resetPendingBookings() {
+    try {
+        console.log('Starting daily reset of pending bookings...');
+        
+        // Get all pending bookings
+        const pendingSnapshot = await db.collection('tables')
+            .where('status', '==', 'pending')
+            .get();
+        
+        if (pendingSnapshot.empty) {
+            console.log('No pending bookings to reset');
+            return;
+        }
+        
+        // Delete all pending bookings (this makes tables available again)
+        const batch = db.batch();
+        let resetCount = 0;
+        
+        pendingSnapshot.forEach(doc => {
+            batch.delete(doc.ref);
+            resetCount++;
+        });
+        
+        await batch.commit();
+        
+        console.log(`Reset ${resetCount} pending bookings to available`);
+        
+        // Show notification if admin is logged in
+        if (currentUser && currentUser.isAdmin) {
+            alert(`รีเซตการจอง ${resetCount} โต๊ะที่ยังไม่ได้อนุมัติเป็นโต๊ะว่างแล้ว`);
+            // Refresh admin page if currently viewing
+            if (!document.getElementById('adminPage').classList.contains('d-none')) {
+                loadAdminStats();
+                refreshBookings();
+                loadTables();
+            }
+        }
+        
+        // Refresh current page data
+        if (!document.getElementById('bookingPage').classList.contains('d-none')) {
+            loadTables();
+        }
+        if (!document.getElementById('homePage').classList.contains('d-none')) {
+            loadHomeTableStatus();
+        }
+        
+    } catch (error) {
+        console.error('Error resetting pending bookings:', error);
+    }
+}
+
+// Function to calculate time until next 23:59
+// Function to calculate time until next 23:59
+function getTimeUntilReset() {
+    const now = new Date();
+    const resetTime = new Date();
+    
+    // Set to 23:59:00 today
+    resetTime.setHours(23, 59, 0, 0);
+    
+    // If current time is past 23:59, set for tomorrow
+    if (now >= resetTime) {
+        resetTime.setDate(resetTime.getDate() + 1);
+    }
+    
+    return resetTime.getTime() - now.getTime();
+}
+
+
+// Function to start the daily reset scheduler
+// Function to start the daily reset scheduler
+function startDailyResetScheduler() {
+    // Calculate time until next 23:59
+    const timeUntilReset = getTimeUntilReset();
+    
+    console.log(`Next reset scheduled in ${Math.round(timeUntilReset / 1000 / 60)} minutes`);
+    
+    // Set timeout for the first reset
+    setTimeout(() => {
+        resetPendingBookings();
+        
+        // Set daily interval (24 hours = 24 * 60 * 60 * 1000 = 86400000 ms)
+        setInterval(resetPendingBookings, 86400000);
+        
+    }, timeUntilReset);
+}
+
+// Manual reset function for admin (add this button to admin page)
+// Manual reset function for admin (add this button to admin page)
+async function manualResetPendingBookings() {
+    if (!currentUser || !currentUser.isAdmin) {
+        alert('เฉพาะแอดมินเท่านั้นที่สามารถใช้ฟังก์ชันนี้ได้');
+        return;
+    }
+    
+    if (!confirm('ต้องการรีเซตการจองที่ยังไม่ได้อนุมัติทั้งหมดหรือไม่?\nการกระทำนี้จะลบการจองที่รอชำระเงินทั้งหมด')) {
+        return;
+    }
+    
+    await resetPendingBookings();
+    alert('รีเซตการจองที่ยังไม่ได้อนุมัติเรียบร้อยแล้ว');
+}
+
+// Function to show countdown to next reset (optional - for admin dashboard)
+// Function to show countdown to next reset (optional - for admin dashboard)
+function updateResetCountdown() {
+    const countdownElement = document.getElementById('resetCountdown');
+    if (!countdownElement) return;
+    
+    const timeUntilReset = getTimeUntilReset();
+    const hours = Math.floor(timeUntilReset / (1000 * 60 * 60));
+    const minutes = Math.floor((timeUntilReset % (1000 * 60 * 60)) / (1000 * 60));
+    const seconds = Math.floor((timeUntilReset % (1000 * 60)) / 1000);
+    
+    countdownElement.innerHTML = `
+        <i class="bi bi-clock"></i> รีเซตอัตโนมัติใน: 
+        <span class="badge bg-warning text-dark">
+            ${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}
+        </span>
+    `;
+}
+
+// Start countdown timer (update every second)
+function startCountdownTimer() {
+    updateResetCountdown();
+    setInterval(updateResetCountdown, 1000);
+}
+
+// Start countdown timer (update every second)
+function startCountdownTimer() {
+    updateResetCountdown();
+    setInterval(updateResetCountdown, 1000);
+}
+
+// Initialize the auto reset system when the page loads
+document.addEventListener('DOMContentLoaded', function() {
+    // Start the daily reset scheduler
+    startDailyResetScheduler();
+    
+    // Start countdown timer if on admin page
+    startCountdownTimer();
+    
+    console.log('Auto reset system initialized');
+});
+
+
+    </script>
+
+    <footer class="footer mt-5 py-4 bg-light">
+        <div class="container">
+            <div class="row">
+                <!-- Payment Methods -->
+                <div class="col-md-4">
+                    <h5><i class="bi bi-credit-card"></i> ช่องทางการชำระเงิน</h5>
+                    <div class="mb-3">
+                        <p class="mb-1"><strong>ธนาคารออมสิน</strong></p>
+                        <p class="mb-1">ชื่อบัญชี: แผนกวิชาช่างไฟฟ้า วิทยาลัยเทคนิคสิงห์บุรี</p>
+                        <p class="mb-1">เลขที่บัญชี: 020469145294</p>
+                    </div>
+                    <!--<div class="mb-3">
+                        <p class="mb-1"><strong>พร้อมเพย์ (PromptPay)</strong></p>
+                        <p class="mb-1">หมายเลขโทรศัพท์: 081-234-5678</p>
+                    </div>-->
+                </div>
+                
+                <!-- Payment QR Code -->
+                <!--<div class="col-md-4">
+                    <h5><i class="bi bi-qr-code"></i> QR Code ชำระเงิน</h5>
+                    <div class="text-center">
+                        <img src="https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=0812345678" 
+                             alt="QR Code สำหรับชำระเงิน" class="img-fluid mb-2" style="max-width: 150px;">
+                        <p>สแกนเพื่อชำระเงินผ่านพร้อมเพย์</p>
+                    </div>
+                </div>-->
+                
+                <!-- Payment Confirmation QR Code -->
+                <div class="col-md-4">
+                    <h5><i class="bi bi-check-circle"></i> แจ้งการโอนเงิน</h5>
+                    <div class="text-center">
+                        <img src="./bill.png" 
+                             alt="QR Code สำหรับแจ้งการโอนเงิน" class="img-fluid mb-2" style="max-width: 150px;">
+                        <p>สแกนเพื่อแจ้งสลิปการโอน</p>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="row mt-3">
+                <div class="col-12">
+                    <div class="alert alert-info">
+                        <h5><i class="bi bi-receipt"></i> ขั้นตอนการชำระเงิน</h5>
+                        <ol>
+                            <li>ชำระเงินผ่านธนาคารหรือพร้อมเพย์ตามข้อมูลด้านบน</li>
+                            <li>สแกน QR Code "แจ้งการโอนเงิน" หรือคลิกปุ่มด้านล่าง</li>
+                            <li>กรอกข้อมูลและอัพโหลดสลิปการโอนเงิน</li>
+                        </ol>
+                        <a href="https://docs.google.com/forms/d/e/1FAIpQLServkLACdw599I7_k7uoMEl8ydwMuqVhCKGv_JBqI9HVLSLHw/viewform" 
+                           target="_blank" class="btn btn-primary">
+                            <i class="bi bi-arrow-up-right-circle"></i> แจ้งสลิปการโอนเงิน
+                        </a>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="text-center mt-3">
+                <p class="mb-0">ระบบจองโต๊ะงานสถาปนาแผนกช่างไฟฟ้ากำลังครบรอบ 50 ปี</p>
+                <p class="text-muted small">© 2025 แผนกช่างไฟฟ้ากำลัง วิทยาลัยเทคนิคสิงห์บุรี</p>
+            </div>
+        </div>
+    </footer>
+
+    <!-- Add some CSS for the footer -->
+    <style>
+        .footer {
+            border-top: 1px solid #dee2e6;
+        }
+        .footer h5 {
+            color: #007bff;
+            margin-bottom: 1rem;
+        }
+        .footer img {
+            border: 1px solid #dee2e6;
+            border-radius: 8px;
+            padding: 5px;
+            background: white;
+        }
+        .footer ol {
+            padding-left: 1.2rem;
+        }
+        .footer ol li {
+            margin-bottom: 0.5rem;
+        }
+    </style>
+
+
+    <!-- Add some CSS for the footer -->
+    <style>
+        .footer {
+            border-top: 1px solid #dee2e6;
+        }
+        .footer h5 {
+            color: #007bff;
+            margin-bottom: 1rem;
+        }
+        .footer img {
+            border: 1px solid #dee2e6;
+            border-radius: 8px;
+            padding: 5px;
+            background: white;
+        }
+    </style>
+</body>
+</html>
