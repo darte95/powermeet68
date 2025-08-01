@@ -64,6 +64,17 @@
             z-index: 1000;
         }
         
+        .edit-btn {
+            position: fixed;
+            bottom: 80px;
+            right: 20px;
+            z-index: 1000;
+        }
+        
+        .modal-password {
+            max-width: 400px;
+        }
+        
         @media print {
             .no-print {
                 display: none !important;
@@ -82,6 +93,76 @@
     </style>
 </head>
 <body>
+    <!-- Modal สำหรับยืนยันรหัสผ่าน -->
+    <div class="modal fade" id="passwordModal" tabindex="-1" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered modal-password">
+            <div class="modal-content">
+                <div class="modal-header bg-warning">
+                    <h5 class="modal-title">ยืนยันรหัสผ่านแอดมิน</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="mb-3">
+                        <label for="adminPassword" class="form-label">รหัสผ่านแอดมิน:</label>
+                        <input type="password" class="form-control" id="adminPassword" placeholder="กรอกรหัสผ่าน">
+                    </div>
+                    <div class="alert alert-danger d-none" id="passwordError">
+                        รหัสผ่านไม่ถูกต้อง!
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">ปิด</button>
+                    <button type="button" class="btn btn-warning" onclick="verifyPassword()">ยืนยัน</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal สำหรับแก้ไขข้อมูล -->
+    <div class="modal fade" id="editModal" tabindex="-1" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content">
+                <div class="modal-header bg-primary text-white">
+                    <h5 class="modal-title" id="editModalTitle">แก้ไขข้อมูลการจอง</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <form id="editForm">
+                        <input type="hidden" id="editBookingId">
+                        <div class="mb-3">
+                            <label class="form-label">หมายเลขโต๊ะ:</label>
+                            <input type="text" class="form-control" id="editTableNumber" readonly>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label">ชื่อผู้จอง:</label>
+                            <input type="text" class="form-control" id="editUserName" required>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label">เบอร์โทรศัพท์:</label>
+                            <input type="tel" class="form-control" id="editUserPhone" required maxlength="10" pattern="0[0-9]{9}">
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label">สถานะ:</label>
+                            <select class="form-select" id="editStatus" required>
+                                <option value="pending">รอชำระเงิน</option>
+                                <option value="booked">จองแล้ว</option>
+                            </select>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label">ราคา:</label>
+                            <input type="number" class="form-control" id="editPrice" required min="0" step="100">
+                        </div>
+                    </form>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">ปิด</button>
+                    <button type="button" class="btn btn-danger" onclick="deleteBooking()">ลบข้อมูล</button>
+                    <button type="button" class="btn btn-primary" onclick="saveChanges()">บันทึกการเปลี่ยนแปลง</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
     <div class="container-fluid">
         <!-- ส่วนหัวรายงาน -->
         <div class="report-header text-center">
@@ -120,10 +201,13 @@
             <div class="row mb-4">
                 <div class="col-12">
                     <div class="card shadow">
-                        <div class="card-header bg-success text-white">
+                        <div class="card-header bg-success text-white d-flex justify-content-between align-items-center">
                             <h3 class="card-title mb-0">
                                 <i class="bi bi-list-check"></i> รายการจองทั้งหมด
                             </h3>
+                            <button class="btn btn-light btn-sm no-print" onclick="refreshData()">
+                                <i class="bi bi-arrow-clockwise"></i> รีเฟรช
+                            </button>
                         </div>
                         <div class="card-body">
                             <div class="table-responsive">
@@ -137,12 +221,13 @@
                                             <th>สถานะ</th>
                                             <th>วันที่จอง</th>
                                             <th>ราคา</th>
+                                            <th class="no-print">จัดการ</th>
                                         </tr>
                                     </thead>
                                     <tbody>
                                         <!-- ข้อมูลจะถูกโหลดโดย JavaScript -->
                                         <tr>
-                                            <td colspan="7" class="text-center">
+                                            <td colspan="8" class="text-center">
                                                 <div class="spinner-border text-primary" role="status">
                                                     <span class="visually-hidden">Loading...</span>
                                                 </div>
@@ -205,6 +290,11 @@
         <i class="bi bi-printer"></i> พิมพ์รายงาน
     </button>
 
+    <!-- ปุ่มเปิดโหมดแก้ไข -->
+    <button class="btn btn-warning edit-btn no-print" id="editModeBtn" onclick="toggleEditMode()">
+        <i class="bi bi-pencil-square"></i> โหมดแก้ไข
+    </button>
+
     <!-- Firebase -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/firebase/9.23.0/firebase-app-compat.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/firebase/9.23.0/firebase-firestore-compat.min.js"></script>
@@ -230,10 +320,20 @@
         // ตัวแปร global
         let tablePrice = 1000; // ราคาต่อโต๊ะ
         let totalTables = 112; // จำนวนโต๊ะทั้งหมด
+        let editMode = false;
+        const ADMIN_PASSWORD = "@sbtcadmin1234";
 
         // โหลดข้อมูลเมื่อหน้าเว็บโหลดเสร็จ
         document.addEventListener('DOMContentLoaded', function() {
             // แสดงวันที่ปัจจุบัน
+            updateCurrentDate();
+            
+            // โหลดข้อมูลทั้งหมด
+            loadAllData();
+        });
+
+        // อัปเดตวันที่ปัจจุบัน
+        function updateCurrentDate() {
             const now = new Date();
             document.getElementById('currentDate').textContent = now.toLocaleDateString('th-TH', {
                 year: 'numeric',
@@ -242,12 +342,20 @@
                 hour: '2-digit',
                 minute: '2-digit'
             });
-            
-            // โหลดข้อมูลทั้งหมด
+        }
+
+        // โหลดข้อมูลทั้งหมด
+        function loadAllData() {
             loadSummaryStats();
             loadAllBookings();
             loadBookingsByStatus();
-        });
+        }
+
+        // รีเฟรชข้อมูล
+        function refreshData() {
+            updateCurrentDate();
+            loadAllData();
+        }
 
         // โหลดสถิติสรุป
         async function loadSummaryStats() {
@@ -330,7 +438,7 @@
                 if (snapshot.empty) {
                     tbody.innerHTML = `
                         <tr>
-                            <td colspan="7" class="text-center text-muted">ไม่มีข้อมูลการจอง</td>
+                            <td colspan="8" class="text-center text-muted">ไม่มีข้อมูลการจอง</td>
                         </tr>
                     `;
                     return;
@@ -364,6 +472,11 @@
                         </td>
                         <td>${bookedDate}</td>
                         <td>${(data.price || tablePrice).toLocaleString()} บาท</td>
+                        <td class="no-print">
+                            <button class="btn btn-sm btn-outline-primary" onclick="editBooking('${doc.id}')" ${!editMode ? 'disabled' : ''}>
+                                <i class="bi bi-pencil"></i> แก้ไข
+                            </button>
+                        </td>
                     `;
                     
                     tbody.appendChild(row);
@@ -372,7 +485,7 @@
                 console.error('Error loading all bookings:', error);
                 document.querySelector('#allBookingsTable tbody').innerHTML = `
                     <tr>
-                        <td colspan="7" class="text-center text-danger">
+                        <td colspan="8" class="text-center text-danger">
                             <i class="bi bi-exclamation-triangle"></i> เกิดข้อผิดพลาดในการโหลดข้อมูล
                         </td>
                     </tr>
@@ -424,6 +537,11 @@
                                 </div>
                                 <div class="text-end">
                                     <div class="text-warning fw-bold">${(data.price || tablePrice).toLocaleString()} บาท</div>
+                                    ${editMode ? `
+                                    <button class="btn btn-sm btn-outline-primary mt-2" onclick="editBooking('${doc.id}')">
+                                        <i class="bi bi-pencil"></i> แก้ไข
+                                    </button>
+                                    ` : ''}
                                 </div>
                             </div>
                         `;
@@ -469,6 +587,11 @@
                                 </div>
                                 <div class="text-end">
                                     <div class="text-success fw-bold">${(data.price || tablePrice).toLocaleString()} บาท</div>
+                                    ${editMode ? `
+                                    <button class="btn btn-sm btn-outline-primary mt-2" onclick="editBooking('${doc.id}')">
+                                        <i class="bi bi-pencil"></i> แก้ไข
+                                    </button>
+                                    ` : ''}
                                 </div>
                             </div>
                         `;
@@ -489,6 +612,144 @@
                         <i class="bi bi-exclamation-triangle"></i> เกิดข้อผิดพลาดในการโหลดข้อมูล
                     </div>
                 `;
+            }
+        }
+
+        // เปิด/ปิดโหมดแก้ไข
+        function toggleEditMode() {
+            if (!editMode) {
+                // เปิดโหมดแก้ไข - แสดง modal ยืนยันรหัสผ่าน
+                const modal = new bootstrap.Modal(document.getElementById('passwordModal'));
+                modal.show();
+            } else {
+                // ปิดโหมดแก้ไข
+                editMode = false;
+                document.getElementById('editModeBtn').className = 'btn btn-warning edit-btn no-print';
+                document.getElementById('editModeBtn').innerHTML = '<i class="bi bi-pencil-square"></i> โหมดแก้ไข';
+                loadAllData();
+            }
+        }
+
+        // ตรวจสอบรหัสผ่าน
+        function verifyPassword() {
+            const password = document.getElementById('adminPassword').value;
+            const errorElement = document.getElementById('passwordError');
+            
+            if (password === ADMIN_PASSWORD) {
+                editMode = true;
+                document.getElementById('editModeBtn').className = 'btn btn-danger edit-btn no-print';
+                document.getElementById('editModeBtn').innerHTML = '<i class="bi bi-x-circle"></i> ปิดโหมดแก้ไข';
+                
+                // ปิด modal
+                const modal = bootstrap.Modal.getInstance(document.getElementById('passwordModal'));
+                modal.hide();
+                
+                // โหลดข้อมูลใหม่เพื่อแสดงปุ่มแก้ไข
+                loadAllData();
+                
+                // ล้างรหัสผ่าน
+                document.getElementById('adminPassword').value = '';
+                errorElement.classList.add('d-none');
+            } else {
+                errorElement.classList.remove('d-none');
+            }
+        }
+
+        // แก้ไขข้อมูลการจอง
+        async function editBooking(bookingId) {
+            try {
+                const doc = await db.collection('tables').doc(bookingId).get();
+                if (!doc.exists) {
+                    alert('ไม่พบข้อมูลการจองนี้');
+                    return;
+                }
+                
+                const data = doc.data();
+                const bookedDate = data.bookedAt ? 
+                    data.bookedAt.toDate().toLocaleDateString('th-TH', {
+                        year: 'numeric',
+                        month: 'long',
+                        day: 'numeric',
+                        hour: '2-digit',
+                        minute: '2-digit'
+                    }) : 'ไม่ทราบวันที่';
+                
+                // เตรียมข้อมูลใน modal
+                document.getElementById('editBookingId').value = bookingId;
+                document.getElementById('editTableNumber').value = data.tableLabel || getTableLabel(data.tableNumber);
+                document.getElementById('editUserName').value = data.userName || '';
+                document.getElementById('editUserPhone').value = data.userPhone || '';
+                document.getElementById('editStatus').value = data.status || 'pending';
+                document.getElementById('editPrice').value = data.price || tablePrice;
+                
+                // ตั้งชื่อ modal
+                document.getElementById('editModalTitle').textContent = `แก้ไขข้อมูลการจอง (${bookedDate})`;
+                
+                // แสดง modal
+                const modal = new bootstrap.Modal(document.getElementById('editModal'));
+                modal.show();
+                
+            } catch (error) {
+                console.error('Error loading booking data:', error);
+                alert('เกิดข้อผิดพลาดในการโหลดข้อมูลการจอง');
+            }
+        }
+
+        // บันทึกการเปลี่ยนแปลง
+        async function saveChanges() {
+            const bookingId = document.getElementById('editBookingId').value;
+            const userName = document.getElementById('editUserName').value;
+            const userPhone = document.getElementById('editUserPhone').value;
+            const status = document.getElementById('editStatus').value;
+            const price = parseInt(document.getElementById('editPrice').value);
+            
+            if (!userName || !userPhone || !status || isNaN(price)) {
+                alert('กรุณากรอกข้อมูลให้ครบถ้วนและถูกต้อง');
+                return;
+            }
+            
+            try {
+                await db.collection('tables').doc(bookingId).update({
+                    userName: userName,
+                    userPhone: userPhone,
+                    status: status,
+                    price: price
+                });
+                
+                alert('บันทึกการเปลี่ยนแปลงเรียบร้อยแล้ว');
+                
+                // ปิด modal และโหลดข้อมูลใหม่
+                const modal = bootstrap.Modal.getInstance(document.getElementById('editModal'));
+                modal.hide();
+                
+                loadAllData();
+            } catch (error) {
+                console.error('Error updating booking:', error);
+                alert('เกิดข้อผิดพลาดในการบันทึกข้อมูล');
+            }
+        }
+
+        // ลบข้อมูลการจอง
+        async function deleteBooking() {
+            if (!confirm('แน่ใจว่าต้องการลบข้อมูลการจองนี้หรือไม่?\nการกระทำนี้ไม่สามารถยกเลิกได้')) {
+                return;
+            }
+            
+            const bookingId = document.getElementById('editBookingId').value;
+            
+            try {
+                await db.collection('tables').doc(bookingId).delete();
+                
+                alert('ลบข้อมูลการจองเรียบร้อยแล้ว');
+                
+                // ปิด modal และโหลดข้อมูลใหม่
+                const modal = bootstrap.Modal.getInstance(document.getElementById('editModal'));
+                modal.hide();
+                
+                loadAllData();
+            } catch (error) {
+                console.error('Error deleting booking:', error);
+                alert('เกิดข้อผิดพลาดในการลบข้อมูล');
             }
         }
 
